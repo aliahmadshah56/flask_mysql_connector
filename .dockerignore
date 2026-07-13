@@ -1,0 +1,9 @@
+#Python can generate automatically 
+__pycache__/
+
+#To ignore Secrets (passwords, API keys) copy in image 
+.env
+
+#To ignore Local virtual environment in container
+.venv/
+venv/

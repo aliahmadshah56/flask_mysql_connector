@@ -1,0 +1,13 @@
+# dev
+.vscode
+env
+venv
+devenv
+__pycache__
+.idea
+.DS_Store
+
+# deploy
+dist/
+build/
+*.egg-info
