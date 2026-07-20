@@ -1,109 +1,183 @@
-# Flask MySQL Connector – Dockerized
+# Flask Application CI/CD Pipeline with Jenkins, Docker & Shared Libraries
 
-A Dockerized version of the Flask MySQL Connector project, built for learning and DevOps practice.
+A DevOps project demonstrating an end-to-end CI/CD pipeline: source code is pulled from GitHub, built into a Docker image on a Jenkins agent, pushed to DockerHub, and deployed with Docker Compose. Pipeline logic is modularized using a Jenkins Shared Library.
 
-> **Note:** The original project was created by its original author. This repository is a personal learning project where Docker support was added to containerize the application.
+## Tech Stack
 
----
+| Tool | Purpose |
+|---|---|
+| GitHub | Source code management, webhook trigger |
+| Jenkins | CI/CD orchestration |
+| Jenkins Agent | Isolated build/execution node |
+| Docker | Application containerization |
+| Docker Compose | Multi-container orchestration |
+| DockerHub | Image registry |
+| Groovy | Jenkins pipeline scripting |
 
-## Features
+## Architecture
 
-- Dockerized Python application
-- Lightweight Docker image using `python:3.9-slim`
-- Dependency management with `requirements.txt`
-- Clean Docker build using `--no-cache-dir`
-- Ready for local development and DevOps practice
-
----
+```
+Developer → git push → GitHub
+                          |
+                    (webhook trigger)
+                          ↓
+                  Jenkins (Controller)
+                          |
+                          ↓
+                    Jenkins Agent
+                          |
+                  docker build → docker push
+                          |
+                       DockerHub
+                          |
+                    docker compose up
+                          ↓
+                  Running Container
+```
 
 ## Project Structure
 
-```text
+```
 .
 ├── Dockerfile
-├── .dockerignore
+├── docker-compose.yml
+├── Jenkinsfile
 ├── requirements.txt
-├── setup.py
-├── setup.cfg
 ├── flask_mysql_connector/
-├── examples/
-├── README.md
-└── LICENSE
+└── README.md
 ```
-
----
 
 ## Prerequisites
 
-- Docker Desktop or Docker Engine
+- Ubuntu server(s) for Jenkins controller and agent (EC2 or equivalent)
+- Jenkins installed on the controller
+- Docker and Docker Compose installed on the agent
 - Git
+- A DockerHub account
 
----
+## Docker Setup
 
-## Clone Repository
+**Dockerfile** — builds the Python environment and installs dependencies:
 
-```bash
-git clone https://github.com/aliahmadshah56/flask_mysql_connector.git
-cd flask_mysql_connector
+```dockerfile
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "app.py"]
 ```
 
----
+**docker-compose.yml** — defines the application service:
 
-## Build Docker Image
-
-```bash
-docker build -t flask_mysql_connector .
+```yaml
+services:
+  flask:
+    container_name: flask
+    build:
+      context: .
+    ports:
+      - "5000:5000"
 ```
 
-## Verify Image
+## Jenkins Pipeline Stages
 
+1. **Clone** — Jenkins pulls the latest code from GitHub.
+2. **Build** — builds the Docker image.
+   ```bash
+   docker build -t flask-app:latest .
+   ```
+3. **Test** — runs application checks (placeholder for future test integration).
+4. **Push** — tags and pushes the image to DockerHub.
+   ```bash
+   docker login
+   docker tag flask-app:latest <dockerhub-username>/flask-app:latest
+   docker push <dockerhub-username>/flask-app:latest
+   ```
+5. **Deploy** — recreates the container via Docker Compose.
+   ```bash
+   docker compose down
+   docker compose up --build -d
+   ```
+
+## Jenkins Configuration
+
+**DockerHub credentials:**
+Jenkins Dashboard → Manage Jenkins → Credentials → Add Credentials
+- Kind: `Username with password`
+- Username: your DockerHub username
+- Password: DockerHub password or access token
+- ID: `dockerhub-cred`
+
+**Jenkins Agent setup:**
 ```bash
-docker images
+sudo usermod -aG docker ubuntu
+exit          # re-login for group change to take effect
+docker ps     # verify agent can run docker commands
 ```
 
-## Run Container
+## Jenkins Shared Library
 
-```bash
-docker run --rm flask_mysql_connector
+Pipeline steps are modularized into a shared library for reuse across projects:
+
+```
+Jenkins-Shared-Library
+└── vars
+    ├── docker_build.groovy
+    ├── docker_push.groovy
+    └── gitclone.groovy
 ```
 
----
+Usage in the Jenkinsfile:
 
-## Docker Concepts Practiced
+```groovy
+@Library('shared') _
 
-- Writing a Dockerfile
-- Creating a lightweight Python image
-- Using a working directory
-- Copying project files
-- Installing dependencies from `requirements.txt`
-- Using `pip install --no-cache-dir`
-- Building Docker images
-- Running Docker containers
-- Using `.dockerignore`
+docker_build(
+  imageName: "flask-app",
+  imageTag: "latest"
+)
+```
 
----
+## Troubleshooting
 
-## Technologies Used
+**Docker permission denied**
+```
+permission denied while trying to connect to the Docker daemon socket
+```
+Fix: add the Jenkins agent user to the `docker` group and restart the agent session.
+```bash
+sudo usermod -aG docker ubuntu
+```
 
-- Python 3.9
-- Flask
-- MySQL Connector Python
-- Pandas
-- Docker
+**DockerHub push access denied**
+Make sure the image is tagged with your DockerHub namespace before pushing.
+```bash
+# Wrong
+docker push flask-app:latest
 
----
+# Correct
+docker tag flask-app:latest <dockerhub-username>/flask-app:latest
+docker push <dockerhub-username>/flask-app:latest
+```
 
-## Learning Objective
+**Jenkins agent goes offline / build fails on disk space**
+```bash
+df -h
+docker system prune -a
+```
 
-This repository was created to practice Docker by containerizing an existing Python project. The primary goal was to understand how to:
+## What This Project Covers
 
-- Create Docker images
-- Optimize image size
-- Manage Python dependencies
-- Build reproducible development environments
+- Declarative Jenkins pipelines
+- Jenkins agent configuration
+- Docker image build and DockerHub push
+- Docker Compose–based deployment
+- GitHub webhook–triggered builds
+- Jenkins Shared Libraries for reusable pipeline code
 
----
+## Author
 
-## License
-
-This project follows the license included in the original repository.
+**Ali Ahmad Shah**
+GitHub: [aliahmadshah56](https://github.com/aliahmadshah56)
+DockerHub: [aliahmadshah](https://hub.docker.com/u/aliahmadshah)
