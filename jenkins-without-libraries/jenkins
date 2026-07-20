@@ -1,0 +1,66 @@
+pipeline{
+    agent { label "flask"}
+    stages {
+        stage( "code")
+        {
+            steps
+            {
+                echo "this is cloning the code"
+                git url: "https://github.com/aliahmadshah56/flask_mysql_connector.git", branch: "main"
+                echo "code clone successfully..."
+            }
+        }
+        stage("check docker permission") {
+    steps {
+        sh '''
+        whoami
+        id
+        groups
+        docker ps
+        '''
+    }
+}
+        stage( "build")
+        {
+            steps
+            {
+                echo "this is building the code"
+                sh "pwd"
+                sh "docker build -t flask-app:latest ."
+                echo "build code successfully..."
+            }
+        }
+        stage( "test")
+        {
+            steps
+            {
+                echo " this is testing the code"
+            }
+        }
+        stage( "deploy")
+        {
+            steps
+            {
+                echo "this is deploying the code"
+                // sh "docker run -d flask-app:latest"
+                sh "docker compose down && docker compose up --build"
+            }
+        }
+        stage("push")
+        {
+            steps
+            {
+                withCredentials([usernamePassword(
+                    credentialsId: "dockerhub-cred",
+                    usernameVariable: "DockerUser",
+                    passwordVariable: "DockerPass")])
+                    {
+                        sh 'docker login -u $DockerUser -p $DockerPass'
+                        sh 'docker image tag flask-app:latest $DockerUser/flask-app:latest'
+                        sh 'docker push $DockerUser/flask-app:latest'
+                    }
+            }
+        }
+    }
+        
+}
