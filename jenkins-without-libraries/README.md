@@ -52,6 +52,7 @@ Docker Hub
     v
 Docker Container
 ```
+<img width="1260" height="878" alt="image" src="https://github.com/user-attachments/assets/cb64c340-d350-4bbc-9be9-bc90f48cd86f" />
 
 ---
 
