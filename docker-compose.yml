@@ -1,7 +1,6 @@
 services:
  flask:
   container_name: flask
-  build:
-   context: .
+  image: aliahmadshah/flask-app:latest
   ports:
    - "5000:5000"
