@@ -8,9 +8,7 @@ pipeline{
             steps
             {
                 script{
-                // echo "this is cloning the code"
                 gitclone("https://github.com/aliahmadshah56/flask_mysql_connector.git", "master")
-                // echo "code clone successfully..."
                 
                 }
                 
@@ -55,7 +53,6 @@ pipeline{
             steps
             {
                 echo "this is deploying the code"
-                // sh "docker run -d flask-app:latest"
                 sh "docker compose down && docker compose up --build"
             }
         }
